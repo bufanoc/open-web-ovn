@@ -19,16 +19,26 @@ if ! grep -q "Ubuntu 22.04" /etc/os-release; then
     exit 1
 fi
 
+# Function to check command status
+check_status() {
+    if [ $? -ne 0 ]; then
+        echo "Error: $1"
+        exit 1
+    fi
+}
+
 # Update system
 echo "Updating system packages..."
 apt-get update
 apt-get upgrade -y
+check_status "Failed to update system packages"
 
 # Install Node.js and npm
 echo "Installing Node.js and npm..."
 if ! command -v node &> /dev/null; then
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
     apt-get install -y nodejs
+    check_status "Failed to install Node.js"
 fi
 
 # Install MongoDB
@@ -38,24 +48,23 @@ if ! command -v mongod &> /dev/null; then
     echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
     apt-get update
     apt-get install -y mongodb-org
+    check_status "Failed to install MongoDB"
     systemctl start mongod
     systemctl enable mongod
+    check_status "Failed to start MongoDB service"
 fi
 
-# Install OVN dependencies
-echo "Installing OVN dependencies..."
-apt-get install -y \
-    openvswitch-switch \
-    openvswitch-common \
-    ovn-central \
-    ovn-host \
-    ovn-common
+# Install nginx
+echo "Installing nginx..."
+apt-get install -y nginx
+check_status "Failed to install nginx"
 
 # Create application directory
 APP_DIR="/opt/open-web-ovn"
 echo "Creating application directory at $APP_DIR..."
 mkdir -p $APP_DIR
 cd $APP_DIR
+check_status "Failed to create application directory"
 
 # Clone the repository
 echo "Cloning the repository..."
@@ -64,23 +73,42 @@ if [ -d "$APP_DIR/.git" ]; then
 else
     git clone https://github.com/bufanoc/open-web-ovn.git .
 fi
+check_status "Failed to clone repository"
+
+# Check if frontend files exist
+if [ ! -f "frontend/public/index.html" ] || [ ! -f "frontend/public/manifest.json" ]; then
+    echo "Error: Missing required frontend files"
+    exit 1
+fi
 
 # Install backend dependencies
 echo "Installing backend dependencies..."
 cd backend
+if [ ! -f "package.json" ]; then
+    echo "Error: Missing backend package.json"
+    exit 1
+fi
 npm install
+check_status "Failed to install backend dependencies"
 
 # Install frontend dependencies and build
 echo "Installing frontend dependencies and building..."
 cd ../frontend
+if [ ! -f "package.json" ]; then
+    echo "Error: Missing frontend package.json"
+    exit 1
+fi
 npm install
+check_status "Failed to install frontend dependencies"
+
 npm run build
+check_status "Failed to build frontend"
 
 # Create systemd service for backend
 echo "Creating systemd service..."
 cat > /etc/systemd/system/open-web-ovn.service << EOL
 [Unit]
-Description=Open Web OVN
+Description=Open Virtual Network Management Interface
 After=network.target mongodb.service
 
 [Service]
@@ -98,7 +126,6 @@ EOL
 
 # Setup nginx for frontend
 echo "Setting up nginx..."
-apt-get install -y nginx
 
 # Create nginx configuration
 cat > /etc/nginx/sites-available/open-web-ovn << EOL
@@ -130,15 +157,18 @@ rm -f /etc/nginx/sites-enabled/default
 
 # Verify nginx configuration
 nginx -t
+check_status "Invalid nginx configuration"
 
 # Reload nginx
 systemctl reload nginx
+check_status "Failed to reload nginx"
 
 # Start the backend service
 echo "Starting the service..."
 systemctl daemon-reload
 systemctl enable open-web-ovn
 systemctl start open-web-ovn
+check_status "Failed to start backend service"
 
 # Set correct permissions
 chown -R root:root $APP_DIR
@@ -146,7 +176,7 @@ chmod -R 755 $APP_DIR
 
 echo "Installation completed successfully!"
 echo "You can access the application at: http://YOUR_SERVER_IP"
-echo "Please ensure your firewall allows access to ports 80 (HTTP) and 5000 (API)"
+echo "Please ensure your firewall allows access to port 80 (HTTP)"
 echo ""
 echo "To check the status of the service, run: systemctl status open-web-ovn"
 echo "To view the logs, run: journalctl -u open-web-ovn -f"
