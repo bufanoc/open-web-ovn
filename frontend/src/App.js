@@ -1,18 +1,17 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import Box from '@mui/material/Box';
 
 // Pages
-import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ServerManagement from './pages/ServerManagement';
 import NetworkVisualization from './pages/NetworkVisualization';
 import OvnOperations from './pages/OvnOperations';
 
 // Components
-import PrivateRoute from './components/PrivateRoute';
-import Layout from './components/Layout';
+import Navigation from './components/Navigation';
 
 const theme = createTheme({
   palette: {
@@ -30,47 +29,18 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          
-          <Route element={<Layout />}>
+      <Box sx={{ display: 'flex' }}>
+        <Navigation />
+        <Box component="main" sx={{ flexGrow: 1, p: 3, mt: 8 }}>
+          <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/servers"
-              element={
-                <PrivateRoute>
-                  <ServerManagement />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/network"
-              element={
-                <PrivateRoute>
-                  <NetworkVisualization />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/ovn"
-              element={
-                <PrivateRoute>
-                  <OvnOperations />
-                </PrivateRoute>
-              }
-            />
-          </Route>
-        </Routes>
-      </Router>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/servers" element={<ServerManagement />} />
+            <Route path="/network" element={<NetworkVisualization />} />
+            <Route path="/operations" element={<OvnOperations />} />
+          </Routes>
+        </Box>
+      </Box>
     </ThemeProvider>
   );
 }
