@@ -28,6 +28,68 @@ open-web-ovn/
 └── scripts/          # Utility scripts
 ```
 
+## Installation
+
+### Automated Installation (Recommended)
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/bufanoc/open-web-ovn.git
+   cd open-web-ovn
+   ```
+
+2. Run the installation script:
+   ```bash
+   sudo ./scripts/install.sh
+   ```
+
+The installation script will:
+- Update system packages
+- Install Node.js and npm
+- Install MongoDB
+- Install OVN and its dependencies
+- Set up the application
+- Configure nginx as a reverse proxy
+- Create and start systemd services
+
+### Manual Installation
+
+If you prefer to install manually, follow these steps:
+
+1. Install system dependencies:
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y nodejs npm mongodb openvswitch-switch openvswitch-common ovn-central ovn-host ovn-common nginx
+   ```
+
+2. Clone the repository:
+   ```bash
+   git clone https://github.com/bufanoc/open-web-ovn.git
+   cd open-web-ovn
+   ```
+
+3. Install backend dependencies:
+   ```bash
+   cd backend
+   npm install
+   ```
+
+4. Install frontend dependencies and build:
+   ```bash
+   cd ../frontend
+   npm install
+   npm run build
+   ```
+
+5. Configure nginx and start services manually (refer to installation script for details)
+
+### Uninstallation
+
+To uninstall the application:
+```bash
+sudo ./scripts/uninstall.sh
+```
+
 ## Getting Started
 
 1. Clone the repository:
